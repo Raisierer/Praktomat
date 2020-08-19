@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from django.urls import reverse
 from django.template import Template, loader
 from django.conf import settings
-from accounts.forms import MyRegistrationForm, UserChangeForm, ImportForm, ImportTutorialAssignmentForm, ImportMatriculationListForm
+from accounts.forms import MyRegistrationForm, UserChangeForm, ImportForm, ImportTutorialAssignmentForm, ImportMatriculationListForm, ImportUserTextsForm, AcceptDisclaimerForm
 from accounts.models import User, Tutorial
 from accounts.decorators import local_user_required
 from django.contrib.auth.models import Group
@@ -157,6 +157,40 @@ def import_tutorial_assignment(request):
     return render(request, 'admin/accounts/user/import_tutorial_assignment.html', {'form': form, 'title':"Import tutorial assignment"  })
 
 @staff_member_required
+def import_user_texts(request):
+    """ View in the admin """
+    if request.method == 'POST':
+        form = ImportUserTextsForm(request.POST, request.FILES)
+        if form.is_valid():
+            file = form.files['csv_file']
+            file.seek(0)
+            try:
+                reader = csv.reader(io.StringIO(file.read().decode('utf-8')), delimiter=str(form.cleaned_data['delimiter']), quotechar=str(form.cleaned_data['quotechar']))
+            except UnicodeDecodeError as e:
+                messages.error(request, "Import failed: %s" % str(e))
+                return render(request, 'admin/accounts/user/import_user_texts.html', {'form': form, 'title':"Import user texts"  })
+            succeeded = not_present = failed = 0
+            for row in reader:
+                try:
+                    matching_users = User.objects.filter(mat_number = row[0])
+                    if not matching_users.exists():
+                        not_present += 1
+                        continue
+                    user = matching_users.get()
+                    user.user_text = row[1]
+                    user.clean_fields()
+                    user.save()
+                    succeeded += 1
+                except:
+                    failed += 1
+            #assert False
+            messages.warning(request, "%i user texts were imported successfully, %i users not found, %i failed." % (succeeded, not_present, failed))
+            return HttpResponseRedirect(reverse('admin:accounts_user_changelist'))
+    else:
+        form = ImportUserTextsForm()
+    return render(request, 'admin/accounts/user/import_user_texts.html', {'form': form, 'title':"Import user texts"  })
+
+@staff_member_required
 def import_matriculation_list(request, group_id):
     """ Set the group membership of all users according to an uploaded list of matriculation numbers. """
     group = get_object_or_404(Group, pk=group_id)
@@ -199,7 +233,20 @@ def import_matriculation_list(request, group_id):
             return HttpResponseRedirect(reverse('admin:auth_group_change', args=[group_id]))
     else:
         form = ImportMatriculationListForm()
-    return render(request, 'admin/auth/group/import_matriculation_list.html', {'form': form, 'title':"Import matriuculation number list"})
+    return render(request, 'admin/auth/group/import_matriculation_list.html', {'form': form, 'title':"Import matriculation number list"})
 
 def deactivated(request):
     return render(request, 'registration/registration_deactivated.html')
+
+def accept_disclaimer(request):
+    if request.method == 'POST':
+        form = AcceptDisclaimerForm(request.POST)
+        if form.is_valid():
+            # the following should be enforced by the form but check again, just to be sure
+            if form.cleaned_data['accept_disclaimer']:
+                request.user.accepted_disclaimer = True
+                request.user.save()
+                return HttpResponseRedirect(reverse('index'))
+    else:
+        form = AcceptDisclaimerForm()
+    return render(request, 'registration/accept_disclaimer.html', {'form' : form})

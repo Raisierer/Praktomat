@@ -65,7 +65,12 @@ def solution_list(request, task_id, user_id=None):
                     'site_name': settings.SITE_NAME,
                     'solution': solution,
                 }
+                if user_id:
+                    # in case someone else uploaded the solution, add this to the email
+                    c['uploader'] = request.user
                 with tempfile.NamedTemporaryFile(mode='w+') as tmp:
+                    tmp.write("Content-Type: text/plain; charset=utf-8\n")
+                    tmp.write("Content-Transfer-Encoding: quoted-printable\n\n")
                     tmp.write(t.render(c))
                     tmp.seek(0)
                     [signed_mail, __, __, __, __]  = execute_arglist(["openssl", "smime", "-sign", "-signer", settings.CERTIFICATE, "-inkey", settings.PRIVATE_KEY, "-in", tmp.name], ".", unsafe=True)
@@ -155,7 +160,7 @@ def solution_detail(request, solution_id, full):
             htmlinjectors = HtmlInjector.objects.filter(task = solution.task, inject_in_solution_full_view = True)
         else:
             htmlinjectors = HtmlInjector.objects.filter(task = solution.task, inject_in_solution_view      = True)
-        htmlinjector_snippets = [ injector.html_file.read() for injector in htmlinjectors ]
+        htmlinjector_snippets = [ injector.html_file.read().decode("utf-8") for injector in htmlinjectors ]
 
 
 
