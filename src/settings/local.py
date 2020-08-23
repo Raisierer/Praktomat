@@ -60,17 +60,9 @@ SERVER_EMAIL = 'praktomat@ils.uni-stuttgart.de'
 EMAIL_BACKEND = 'django.core.mail.backend.smtp.EmailBackend'
 
 # import email settings from file located in Praktomat parent folder
-from ....email_settings import *
+from .configuration import load_configuration
+load_configuration()
 
-DEFAULT_FROM_EMAIL = "praktomat@ils.uni-stuttgart.de"
-
-DATABASES = {
-    'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            # needs to be created first with sudo -u postgres createdb -O praktomat praktomat_<praktomat_id>
-            'NAME':   'praktomat_' + PRAKTOMAT_ID, 
-    }
-}
 
 # Private key used to sign uploded solution files in submission confirmation email
 # PRIVATE_KEY = '/srv/praktomat/mailsign/signer_key.pem'
