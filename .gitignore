@@ -18,3 +18,7 @@ build
 .DS_Store
 .vscode
 configuration.py
+
+.env.dev
+.env.prod
+.env.prod.db
