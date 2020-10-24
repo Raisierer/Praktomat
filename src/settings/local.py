@@ -6,7 +6,6 @@
 # If you are not deploying on praktomat.ils.uni-stuttgart.de you need to rewrite this file.
 
 from . import defaults
-from .configuration import load_configuration
 import os
 from os.path import join, dirname, basename
 import re
@@ -68,13 +67,13 @@ EMAIL_HOST_PASSWORD = os.environ['EMAIL_PASSWORD']
 # Database settings
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': PRAKTOMAT_ID,
-        'USER': 'postgres',
-        'PASSWORD': os.environ['POSTGRES_PASSWORD'],
-        'HOST': 'db',
-        'PORT': 5432,
+    "default": {
+        "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
+        "NAME": os.environ.get("SQL_DATABASE", os.path.join(PRAKTOMAT_PATH, "db.sqlite3")),
+        "USER": os.environ.get("SQL_USER", "user"),
+        "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
+        "HOST": os.environ.get("SQL_HOST", "localhost"),
+        "PORT": os.environ.get("SQL_PORT", "5432"),
     }
 }
 
@@ -82,7 +81,7 @@ DATABASES = {
 # Private key used to sign uploded solution files in submission confirmation email
 # PRIVATE_KEY = '/srv/praktomat/mailsign/signer_key.pem'
 PRIVATE_KEY = '/etc/ssl/private/praktomat.key'
-#CERTIFICATE = '/srv/praktomat/mailsign/signer.pem'
+CERTIFICATE = '/srv/praktomat/mailsign/signer.pem'
 
 # Enable Shibboleth:
 SHIB_ENABLED = False
