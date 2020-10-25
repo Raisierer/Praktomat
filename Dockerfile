@@ -1,7 +1,7 @@
 FROM python:3.8.3-alpine
 
 # set work directory
-WORKDIR /usr/src/app
+WORKDIR /server
 
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -16,9 +16,13 @@ RUN pip install --upgrade pip
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 
+# copy entrypoint.sh
+COPY ./entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
 # copy project
 COPY . ./Praktomat/
 RUN mkdir ./PraktomatSupport
 
 # run entrypoint.sh
-ENTRYPOINT ["/usr/src/app/Praktomat/entrypoint.sh"]
+ENTRYPOINT ["/server/entrypoint.sh"]
