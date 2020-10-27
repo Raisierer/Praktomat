@@ -38,31 +38,44 @@ FROM python:3.8.3-alpine
 RUN mkdir -p /home/app
 
 # create the app user
-RUN addgroup -S app && adduser -S app -G app
+RUN addgroup -S praktomat && adduser -S praktomat -G praktomat && adduser -S tester -G praktomat
 
 # create the appropriate directories
 ENV HOME=/home/app
-ENV APP_HOME=/home/app/web
-RUN mkdir $APP_HOME
-WORKDIR $APP_HOME
+ENV PRAKTOMAT_ROOT=/home/app/Praktomat
+ENV PRAKTOMAT_SUPPORT=/home/app/PraktomatSupport
+ENV PRAKTOMAT_SANDBOX=/srv/praktomat/sandbox
+
+RUN mkdir $PRAKTOMAT_ROOT
+RUN mkdir $PRAKTOMAT_ROOT/static
+RUN mkdir $PRAKTOMAT_SUPPORT
+RUN mkdir -p $PRAKTOMAT_SANDBOX
+
+WORKDIR $PRAKTOMAT_ROOT
 
 # install dependencies
-RUN apk update && apk add libpq
+RUN apk update && apk add libpq sudo
+RUN apk add gcc g++
+#RUN apk add apache2 apache2-dev
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
 RUN pip install --no-cache /wheels/*
 
 # copy entrypoint-prod.sh
-COPY ./entrypoint.prod.sh $APP_HOME
+#COPY ./entrypoint.prod.sh $APP_HOME
 
 # copy project
-COPY . $APP_HOME
+COPY . $PRAKTOMAT_ROOT
+COPY ./mime.types /etc/
 
 # chown all the files to the app user
-RUN chown -R app:app $APP_HOME
+RUN chown -R praktomat:praktomat $PRAKTOMAT_ROOT
+RUN chown -R praktomat:praktomat $PRAKTOMAT_SUPPORT
+RUN chown -R praktomat:praktomat $PRAKTOMAT_SANDBOX
 
 # change to the app user
-USER app
+USER praktomat
+WORKDIR $PRAKTOMAT_ROOT/src/
 
 # run entrypoint.prod.sh
-ENTRYPOINT ["/home/app/web/entrypoint.prod.sh"]
+ENTRYPOINT ["/home/app/Praktomat/entrypoint.prod.sh"]

@@ -10,29 +10,27 @@ import os
 from os.path import join, dirname, basename
 import re
 
-PRAKTOMAT_PATH = '/server/Praktomat'
+PRAKTOMAT_PATH = dirname(dirname(dirname(__file__)))
 
-PRAKTOMAT_ID = os.environ['ID']
+PRAKTOMAT_ID = os.environ.get('ID', 'Praktomat')
 
-DEBUG = False
+DEBUG = int(os.environ.get('DEBUG', 0))
 
 MIRROR = False
 
 
 # The URL where this site is reachable. 'http://localhost:8000/' in case of the
 # development server.
-BASE_HOST = os.environ['BASE_HOST']
-BASE_PATH = '/' + PRAKTOMAT_ID + '/'
+BASE_HOST = os.environ.get('BASE_HOST', 'http://0.0.0.0:8000/')
+BASE_PATH = '/'
 
-SITE_NAME = os.environ['SITE_NAME']
-site_name = os.environ['SITE_NAME']
+SITE_NAME = os.environ.get('SITE_NAME', 'Praktomat')
 
-ALLOWED_HOSTS = ['localhost', 'praktomat.ils.uni-stuttgart.de']
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 
 # URL to use when referring to static files.
 STATIC_URL = BASE_PATH + 'static/'
-
-STATIC_ROOT = join(dirname(PRAKTOMAT_PATH), "static")
+STATIC_ROOT = join(PRAKTOMAT_PATH, "static")
 
 TEST_MAXLOGSIZE = 512
 
@@ -57,12 +55,12 @@ ADMINS = [
 
 # EMail settings
 
-SERVER_EMAIL = 'praktomat@ils.uni-stuttgart.de'
+#SERVER_EMAIL = 'praktomat@ils.uni-stuttgart.de'
 
-EMAIL_BACKEND = 'django.core.mail.backend.smtp.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backend.smtp.EmailBackend'
 
-EMAIL_HOST_USER = os.environ['EMAIL_USERNAME']
-EMAIL_HOST_PASSWORD = os.environ['EMAIL_PASSWORD']
+#EMAIL_HOST_USER = os.environ['EMAIL_USERNAME']
+#EMAIL_HOST_PASSWORD = os.environ['EMAIL_PASSWORD']
 
 # Database settings
 
