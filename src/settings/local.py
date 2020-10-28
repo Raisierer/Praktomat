@@ -88,10 +88,10 @@ REGISTRATION_POSSIBLE = True
 # SYSADMIN_MOTD_URL = "https://praktomat.cs.kit.edu/sysadmin_motd.html"
 
 # Use a dedicated user to test submissions
-USEPRAKTOMATTESTER = True
+USEPRAKTOMATTESTER = bool(int(os.environ.get("USE_PRAKTOMAT_TESTER", 1)))
 
 # Use docker to test submission
-USESAFEDOCKER = False
+USESAFEDOCKER = bool(int(os.environ.get("USE_SAFE_DOCKER", 0)))
 
 # Various extra files and versions
 #CHECKSTYLEALLJAR = '/srv/praktomat/contrib/checkstyle-5.7-all.jar'

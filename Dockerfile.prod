@@ -38,7 +38,10 @@ FROM python:3.8.3-alpine
 RUN mkdir -p /home/app
 
 # create the app user
-RUN addgroup -S praktomat && adduser -S praktomat -G praktomat && adduser -S tester -G praktomat
+RUN addgroup -S praktomat && addgroup -S sudo && adduser -S praktomat -G praktomat && adduser -S tester -G praktomat
+
+
+#RUN addgroup praktomat sudo && addgroup tester sudo
 
 # create the appropriate directories
 ENV HOME=/home/app
@@ -54,12 +57,17 @@ RUN mkdir -p $PRAKTOMAT_SANDBOX
 WORKDIR $PRAKTOMAT_ROOT
 
 # install dependencies
-RUN apk update && apk add libpq sudo
+RUN apk update && apk add libpq postgresql-dev sudo
 RUN apk add gcc g++
+RUN apk add swig cyrus-sasl-dev openssl openssl-dev dejagnu 
+RUN apk add docker perl-ipc-run perl-data-guid
 #RUN apk add apache2 apache2-dev
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
 RUN pip install --no-cache /wheels/*
+
+RUN echo '%wheel ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/wheel
+RUN adduser praktomat wheel
 
 # copy entrypoint-prod.sh
 #COPY ./entrypoint.prod.sh $APP_HOME
@@ -67,6 +75,7 @@ RUN pip install --no-cache /wheels/*
 # copy project
 COPY . $PRAKTOMAT_ROOT
 COPY ./mime.types /etc/
+RUN cp /home/app/Praktomat/safe-docker/safe-docker /usr/local/bin
 
 # chown all the files to the app user
 RUN chown -R praktomat:praktomat $PRAKTOMAT_ROOT
