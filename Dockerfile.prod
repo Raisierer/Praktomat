@@ -60,7 +60,7 @@ WORKDIR $PRAKTOMAT_ROOT
 RUN apk update && apk add libpq postgresql-dev sudo
 RUN apk add gcc g++
 RUN apk add swig cyrus-sasl-dev openssl openssl-dev dejagnu 
-RUN apk add docker perl-ipc-run perl-data-guid
+#RUN apk add docker perl-ipc-run perl-data-guid
 #RUN apk add apache2 apache2-dev
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
@@ -75,7 +75,7 @@ RUN adduser praktomat wheel
 # copy project
 COPY . $PRAKTOMAT_ROOT
 COPY ./mime.types /etc/
-RUN cp /home/app/Praktomat/safe-docker/safe-docker /usr/local/bin
+#RUN cp /home/app/Praktomat/safe-docker/safe-docker /usr/local/bin
 
 # chown all the files to the app user
 RUN chown -R praktomat:praktomat $PRAKTOMAT_ROOT
