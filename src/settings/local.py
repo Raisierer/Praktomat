@@ -9,8 +9,12 @@ from . import defaults
 import os
 from os.path import join, dirname, basename
 import re
+import json
 
-PRAKTOMAT_PATH = dirname(dirname(dirname(__file__)))
+BASE_DIR = dirname(dirname(dirname(__file__)))
+
+PRAKTOMAT_PATH = BASE_DIR
+PRAKTOMAT_ROOT = join(PRAKTOMAT_PATH, 'praktomat')
 
 PRAKTOMAT_ID = os.environ.get('ID', 'Praktomat')
 
@@ -21,8 +25,8 @@ MIRROR = False
 
 # The URL where this site is reachable. 'http://localhost:8000/' in case of the
 # development server.
-BASE_HOST = os.environ.get('BASE_HOST', 'http://0.0.0.0:8000/')
-BASE_PATH = '/'
+BASE_HOST = 'https://' + os.environ.get('BASE_HOST', '0.0.0.0:8000/')
+BASE_PATH = '/' + PRAKTOMAT_ID + '/'
 
 SITE_NAME = os.environ.get('SITE_NAME', 'Praktomat')
 
@@ -30,7 +34,8 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 
 # URL to use when referring to static files.
 STATIC_URL = BASE_PATH + 'static/'
-STATIC_ROOT = join(PRAKTOMAT_PATH, "static")
+STATIC_ROOT = join(BASE_DIR, 'static')
+STATICFILES_DIRS = (join(BASE_DIR, 'media'),)
 
 TEST_MAXLOGSIZE = 512
 
@@ -42,12 +47,9 @@ TEST_TIMEOUT = 180
 # files created at runtime.
 
 # Example: "/home/media/media.lawrence.com/"
-UPLOAD_ROOT = join(dirname(PRAKTOMAT_PATH), "PraktomatSupport/")
+UPLOAD_ROOT = join(BASE_DIR, 'support')
 
-if MIRROR:
-    SANDBOX_DIR = join('/srv/praktomat/sandbox_Mirror/', PRAKTOMAT_ID)
-else:
-    SANDBOX_DIR = join('/srv/praktomat/sandbox/', PRAKTOMAT_ID)
+SANDBOX_DIR = join(BASE_DIR, 'sandbox')
 
 ADMINS = [
     ('Praktomat', 'praktomat@ils.uni-stuttgart.de')
@@ -55,12 +57,18 @@ ADMINS = [
 
 # EMail settings
 
-#SERVER_EMAIL = 'praktomat@ils.uni-stuttgart.de'
+with open('/run/secrets/EMAIL') as email_secrets_file:
+    email_secrets = json.load(email_secrets_file)
 
-#EMAIL_BACKEND = 'django.core.mail.backend.smtp.EmailBackend'
+EMAIL_BACKEND = email_secrets['EMAIL_BACKEND']
+EMAIL_HOST = email_secrets['EMAIL_HOST']
+EMAIL_PORT = email_secrets['EMAIL_PORT']
+EMAIL_HOST_USER = email_secrets['EMAIL_HOST_USER']
+EMAIL_HOST_PASSWORD = email_secrets['EMAIL_HOST_PASSWORD']
+EMAIL_USE_TLS = email_secrets['EMAIL_USE_TLS']
+EMAIL_USE_SSL = email_secrets['EMAIL_USE_SSL']
 
-#EMAIL_HOST_USER = os.environ['EMAIL_USERNAME']
-#EMAIL_HOST_PASSWORD = os.environ['EMAIL_PASSWORD']
+DEFAULT_FROM_EMAIL = email_secrets['DEFAULT_FROM_EMAIL']
 
 # Database settings
 
@@ -78,8 +86,8 @@ DATABASES = {
 
 # Private key used to sign uploded solution files in submission confirmation email
 # PRIVATE_KEY = '/srv/praktomat/mailsign/signer_key.pem'
-PRIVATE_KEY = '/etc/ssl/private/praktomat.key'
-CERTIFICATE = '/srv/praktomat/mailsign/signer.pem'
+PRIVATE_KEY = '/run/secrets/praktomat.key'
+#CERTIFICATE = '/srv/praktomat/mailsign/signer.pem'
 
 # Enable Shibboleth:
 SHIB_ENABLED = False

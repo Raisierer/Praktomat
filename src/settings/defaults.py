@@ -3,17 +3,19 @@
 # parameter, but only if it is not already defined.
 
 # The following variables have _no_ sane default, and need to be set!
-no_defaults = [ "SITE_NAME", "PRAKTOMAT_ID", "BASE_HOST", "BASE_PATH", "UPLOAD_ROOT", "PRIVATE_KEY", "CERTIFICATE"]
-
-import os
-from os.path import dirname, join
-import utilities.log_filter
 import collections
+import utilities.log_filter
+from os.path import dirname, join
+import os
+no_defaults = ["SITE_NAME", "PRAKTOMAT_ID", "BASE_HOST",
+               "BASE_PATH", "UPLOAD_ROOT", "PRIVATE_KEY"]
+
 
 def load_defaults(settings):
-    missing = [ v for v in no_defaults if v not in settings]
+    missing = [v for v in no_defaults if v not in settings]
     if missing:
-        raise RuntimeError("Variables without defaults not set: %s" % ", ".join(missing))
+        raise RuntimeError(
+            "Variables without defaults not set: %s" % ", ".join(missing))
 
     # import settings so that we can conveniently use the settings here
     for k, v in settings.items():
@@ -23,7 +25,8 @@ def load_defaults(settings):
     class D(object):
 
         def __setattr__(self, k, v):
-            object.__setattr__(self, k, v)   # assign value v to instance attribute k
+            # assign value v to instance attribute k
+            object.__setattr__(self, k, v)
             if k not in globals():
                 settings[k] = v
                 globals()[k] = v
@@ -96,12 +99,12 @@ def load_defaults(settings):
         'checker',
         'utilities',
         'settings',
-        #'sessionprofile', #phpBB integration
+        # 'sessionprofile', #phpBB integration
     )
 
     d.MIDDLEWARE = [
         'django.middleware.common.CommonMiddleware',
-        #'sessionprofile.middleware.SessionProfileMiddleware', #phpBB integration
+        # 'sessionprofile.middleware.SessionProfileMiddleware', #phpBB integration
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.contrib.messages.middleware.MessageMiddleware',
         'django.middleware.csrf.CsrfViewMiddleware',
@@ -126,11 +129,10 @@ def load_defaults(settings):
 
     d.STATIC_ROOT = join(PRAKTOMAT_ROOT, "static")
 
-
     # This directory is used to compiling and running the users code.
     # As such it is temporary, and might be put on a tmpfs mount, to speed
     # up the processing
-    d.SANDBOX_DIR = join(UPLOAD_ROOT, 'SolutionSandbox')
+    d.SANDBOX_DIR = (join(UPLOAD_ROOT, 'SolutionSandbox'),)
 
     d.ROOT_URLCONF = 'urls'
 
@@ -167,8 +169,8 @@ def load_defaults(settings):
         else:
             import uuid
             d.SECRET_KEY = uuid.uuid4().hex
-            os.fdopen(os.open(secret_keyfile, os.O_WRONLY | os.O_CREAT, 0o600), 'w').write(SECRET_KEY)
-
+            os.fdopen(os.open(secret_keyfile, os.O_WRONLY |
+                              os.O_CREAT, 0o600), 'w').write(SECRET_KEY)
 
     # Templates
 
@@ -176,7 +178,7 @@ def load_defaults(settings):
         {
             'BACKEND': 'django.template.backends.django.DjangoTemplates',
             'DIRS': [
-                join(PRAKTOMAT_ROOT, "src", "templates"),
+                join(PRAKTOMAT_ROOT, "templates"),
             ],
             'APP_DIRS': True,
             'OPTIONS': {
@@ -202,8 +204,8 @@ def load_defaults(settings):
 
     d.DATABASES = {
         'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME':   UPLOAD_ROOT+'/Database'
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME':   UPLOAD_ROOT+'/Database'
         }
     }
 
@@ -223,10 +225,10 @@ def load_defaults(settings):
 
     d.TINYMCE_JS_URL = STATIC_URL + 'frameworks/tiny_mce/tiny_mce_src.js'
     d.TINYMCE_DEFAULT_CONFIG = {
-      'plugins': 'safari,pagebreak,table,advhr,advimage,advlink,emotions,iespell,inlinepopups,media,searchreplace,print,contextmenu,paste,fullscreen,noneditable,visualchars,nonbreaking,syntaxhl',
+        'plugins': 'safari,pagebreak,table,advhr,advimage,advlink,emotions,iespell,inlinepopups,media,searchreplace,print,contextmenu,paste,fullscreen,noneditable,visualchars,nonbreaking,syntaxhl',
 
-      'theme': "advanced",
-      'theme_advanced_buttons1': "formatselect,|,bold,italic,underline,strikethrough,|,forecolor,|,bullist,numlist,|,sub,sup,|,outdent,indent,blockquote,syntaxhl,|,visualchars,nonbreaking,|,link,unlink,anchor,image,cleanup,help,code,|,print,|,fullscreen",
+        'theme': "advanced",
+        'theme_advanced_buttons1': "formatselect,|,bold,italic,underline,strikethrough,|,forecolor,|,bullist,numlist,|,sub,sup,|,outdent,indent,blockquote,syntaxhl,|,visualchars,nonbreaking,|,link,unlink,anchor,image,cleanup,help,code,|,print,|,fullscreen",
         'theme_advanced_buttons2': "cut,copy,paste,pastetext,pasteword,|,search,replace,|,undo,redo,|,tablecontrols,|,hr,removeformat,visualaid,|,charmap,emotions,iespell,media,advhr",
         'theme_advanced_buttons3': "",
         'theme_advanced_buttons4': "",
@@ -237,7 +239,7 @@ def load_defaults(settings):
         'extended_valid_elements': "textarea[cols|rows|disabled|name|readonly|class]",
 
         'content_css': STATIC_URL + '/styles/style.css',
-      'relative_urls': False,
+        'relative_urls': False,
     }
     d.TINYMCE_SPELLCHECKER = False
     d.TINYMCE_COMPRESSOR = False
@@ -263,15 +265,16 @@ def load_defaults(settings):
     d.JVM_SECURE = PRAKTOMAT_ROOT + '/src/checker/scripts/java'
     d.JVM_POLICY = PRAKTOMAT_ROOT + '/src/checker/scripts/java.policy'
     d.FORTRAN_BINARY = 'g77'
-    d.ISABELLE_BINARY = 'isabelle' # Isabelle should be in PATH
+    d.ISABELLE_BINARY = 'isabelle'  # Isabelle should be in PATH
     d.DEJAGNU_RUNTEST = '/usr/bin/runtest'
     d.CHECKSTYLEALLJAR = '/home/praktomat/contrib/checkstyle-all-4.4.jar'
-    d.JUNIT38='junit'
-    d.JAVA_LIBS = { 'junit3' : '/usr/share/java/junit.jar', 'junit4' : '/usr/share/java/junit4.jar' }
-    d.JAVAP='javap'
-    d.GHC='ghc'
-    d.SCALA='scala'
-    d.SCALAC='scalac'
+    d.JUNIT38 = 'junit'
+    d.JAVA_LIBS = {'junit3': '/usr/share/java/junit.jar',
+                   'junit4': '/usr/share/java/junit4.jar'}
+    d.JAVAP = 'javap'
+    d.GHC = 'ghc'
+    d.SCALA = 'scala'
+    d.SCALAC = 'scalac'
 
     # Enable to run all scripts (checker) as the unix user 'tester'. Therefore
     # put 'tester' as well as the Apache user '_www' (and your development user
@@ -315,7 +318,7 @@ def load_defaults(settings):
 
     d.SHIB_USERNAME = "email"
     d.SHIB_PROVIDER = "kit.edu"
-    
+
     # URL to the MOTD page which will be shown on login page and task list
     d.SYSADMIN_MOTD_URL = None
 
@@ -326,21 +329,21 @@ def load_defaults(settings):
     # Length of timeout applied whenever an external check that runs a students
     # submission is executed,
     # for example: JUnitChecker, DejaGnuChecker
-    d.TEST_TIMEOUT=60
+    d.TEST_TIMEOUT = 60
 
     # Amount of memory available to the checker, in megabytes
     # (this is currently only supported with USESAFEDOCKER=True)
-    d.TEST_MAXMEM=100
+    d.TEST_MAXMEM = 100
 
     # Maximal size (in kbyte) of files created whenever an external check that
     # runs a students submission is executed,
     # for example: JUnitChecker, DejaGnuChecker
-    d.TEST_MAXFILESIZE=64
+    d.TEST_MAXFILESIZE = 64
 
     # Maximal size (in kbyte) of checker logs accepted. This setting is
     # respected currently only by:
     # JUnitChecker, ScriptChecker,
-    d.TEST_MAXLOGSIZE=64
+    d.TEST_MAXLOGSIZE = 64
 
     d.NUMBER_OF_TASKS_TO_BE_CHECKED_IN_PARALLEL = 1
 
@@ -360,7 +363,8 @@ def load_defaults(settings):
 
     if DEBUG:
         # Setup for the debug toolbar
-        settings['INSTALLED_APPS'] = ('debug_toolbar',) + settings['INSTALLED_APPS']
+        settings['INSTALLED_APPS'] = (
+            'debug_toolbar',) + settings['INSTALLED_APPS']
         settings['MIDDLEWARE'] = [
             'debug_toolbar.middleware.DebugToolbarMiddleware',
         ] + settings['MIDDLEWARE']
@@ -389,6 +393,8 @@ def load_defaults(settings):
     }
 
 # Always show toolbar (if DEBUG is true)
+
+
 def show_toolbar(request):
     if request.is_ajax():
         return False

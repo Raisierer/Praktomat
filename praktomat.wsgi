@@ -4,14 +4,15 @@ from os.path import join, dirname, basename
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings.local'
 
 import pathlib
-env_lib_path = pathlib.Path(join(dirname(dirname(dirname(__file__))), "env", "lib"))
-subdirs = [str(p) for p in env_lib_path.iterdir() if p.is_dir()]
-python_path = [p for p in subdirs if basename(p).startswith("python3.")][0]
-import site
-site.addsitedir(join(python_path, "site-packages"))
+#env_lib_path = pathlib.Path(join(dirname(dirname(dirname(__file__))), "env", "lib"))
+#env_lib_path = pathlib.Path("/usr/local/lib/")
+#subdirs = [str(p) for p in env_lib_path.iterdir() if p.is_dir()]
+#python_path = [p for p in subdirs if basename(p).startswith("python3.")][0]
+#import site
+#site.addsitedir(join(python_path, "site-packages"))
 
 import sys
-sys.path.append(join(dirname(dirname(__file__)), "src"))
+sys.path.append(join(os.environ.get('HOME'), "praktomat"))
 
 import warnings
 from django.core.cache import CacheKeyWarning

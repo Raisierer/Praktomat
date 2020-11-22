@@ -1,4 +1,7 @@
 #!/bin/sh
+#set -e
+
+#export PYTHONPATH=$PYTHONPATH:/usr/local/lib/$ALPINEPYTHON/site-packages:/usr/lib/$ALPINEPYTHON/site-packages
 
 if [ "$DATABASE" = "postgres" ]
 then

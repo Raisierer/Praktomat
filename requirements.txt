@@ -15,5 +15,6 @@ docutils
 psycopg2-binary
 
 # WSGI server
-gunicorn
+#gunicorn
+uwsgi
 

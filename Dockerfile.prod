@@ -14,17 +14,18 @@ ENV PYTHONUNBUFFERED 1
 
 # install psycopg2 dependencies
 RUN apk update \
-    && apk add postgresql-dev gcc python3-dev musl-dev
+    && apk add postgresql-dev gcc python3-dev musl-dev uwsgi gcc g++ linux-headers build-base linux-headers pcre-dev
 
-# lint
-RUN pip install --upgrade pip
-RUN pip install flake8
-COPY . .
-#RUN flake8 --ignore=E501,F401 .
 
 # install dependencies
 COPY ./requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
+
+# lint
+#RUN pip install --upgrade pip
+#RUN pip install flake8
+#COPY . .
+#RUN flake8 --ignore=E501,F401 .
 
 
 #########
@@ -34,32 +35,33 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requir
 # pull official base image
 FROM python:3.8.3-alpine
 
+ENV ALPINEPYTHON python3.8
+
 # create directory for the app user
 RUN mkdir -p /home/app
 
 # create the app user
 RUN addgroup -S praktomat && addgroup -S sudo && adduser -S praktomat -G praktomat && adduser -S tester -G praktomat
 
-
-#RUN addgroup praktomat sudo && addgroup tester sudo
-
 # create the appropriate directories
-ENV HOME=/home/app
-ENV PRAKTOMAT_ROOT=/home/app/Praktomat
-ENV PRAKTOMAT_SUPPORT=/home/app/PraktomatSupport
-ENV PRAKTOMAT_SANDBOX=/srv/praktomat/sandbox
+ENV HOME=/home/praktomat
+ENV PRAKTOMAT_ROOT=$HOME/praktomat
+ENV PRAKTOMAT_SUPPORT=$HOME/support
+ENV PRAKTOMAT_STATIC=$HOME/static
+ENV PRAKTOMAT_SANDBOX=$HOME/sandbox
 
 RUN mkdir $PRAKTOMAT_ROOT
-RUN mkdir $PRAKTOMAT_ROOT/static
+RUN mkdir $PRAKTOMAT_STATIC
 RUN mkdir $PRAKTOMAT_SUPPORT
-RUN mkdir -p $PRAKTOMAT_SANDBOX
+RUN mkdir $PRAKTOMAT_SANDBOX
 
-WORKDIR $PRAKTOMAT_ROOT
+WORKDIR $HOME
 
 # install dependencies
 RUN apk update && apk add libpq postgresql-dev sudo
-RUN apk add gcc g++
-RUN apk add swig cyrus-sasl-dev openssl openssl-dev dejagnu 
+RUN apk add gcc g++ linux-headers build-base linux-headers pcre-dev
+RUN apk add swig cyrus-sasl-dev openssl openssl-dev dejagnu
+#RUN apk add python3-dev uwsgi-python3
 #RUN apk add docker perl-ipc-run perl-data-guid
 #RUN apk add apache2 apache2-dev
 COPY --from=builder /usr/src/app/wheels /wheels
@@ -69,22 +71,23 @@ RUN pip install --no-cache /wheels/*
 RUN echo '%wheel ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/wheel
 RUN adduser praktomat wheel
 
-# copy entrypoint-prod.sh
-#COPY ./entrypoint.prod.sh $APP_HOME
+# copy source code
+COPY ./src/ $PRAKTOMAT_ROOT
+COPY ./media/ $HOME/media/
 
-# copy project
-COPY . $PRAKTOMAT_ROOT
+# copy additional files
+COPY ./entrypoint.prod.sh $HOME/
+COPY ./uwsgi.ini $HOME/
+COPY ./praktomat.wsgi $PRAKTOMAT_ROOT/praktomat.py
 COPY ./mime.types /etc/
+
 #RUN cp /home/app/Praktomat/safe-docker/safe-docker /usr/local/bin
 
 # chown all the files to the app user
-RUN chown -R praktomat:praktomat $PRAKTOMAT_ROOT
-RUN chown -R praktomat:praktomat $PRAKTOMAT_SUPPORT
-RUN chown -R praktomat:praktomat $PRAKTOMAT_SANDBOX
+RUN chown -R praktomat:praktomat $HOME
 
 # change to the app user
-USER praktomat
-WORKDIR $PRAKTOMAT_ROOT/src/
+USER praktomat:praktomat
 
 # run entrypoint.prod.sh
-ENTRYPOINT ["/home/app/Praktomat/entrypoint.prod.sh"]
+ENTRYPOINT ["sh", "entrypoint.prod.sh"]
