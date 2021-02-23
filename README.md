@@ -1,13 +1,5 @@
 This is the source distribution of Praktomat, a programming course manager.
 
-Resources
-=========
-
-In case of bugs or feature requests, please use the [Bug tracker]. There is
-also a moderated [mailing list] for Praktomat administrators:
-praktomat-users@lists.kit.edu.
-
-
 General setup
 =============
 
@@ -95,7 +87,7 @@ Python installation or inside a designated virtualenv (recommended).
 The following describes a recommended setup using virtualenv.
 
 ```bash
-git clone --recursive git://github.com/KITPraktomatTeam/Praktomat.git
+git clone --recursive git://github.com/Raisierer/Praktomat.git
 virtualenv -p python3 --system-site-packages env/
 . env/bin/activate
 pip install -r Praktomat/requirements.txt
