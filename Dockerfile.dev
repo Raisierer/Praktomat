@@ -1,28 +1,70 @@
-FROM python:3.8.3-alpine
+FROM python:3.8.3
 
-# set work directory
-WORKDIR /server
+ARG UID=1000
+ARG GID=1000
 
-# set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# create directory for the app user
 
-# install psycopg2 dependencies
-RUN apk update \
-    && apk add postgresql-dev gcc python3-dev musl-dev
+
+# create the appropriate directories
+ENV PRAKTOMAT_HOME=/home/praktomat
+ENV PRAKTOMAT_ROOT=$PRAKTOMAT_HOME/praktomat
+ENV PRAKTOMAT_SUPPORT=$PRAKTOMAT_HOME/support
+ENV PRAKTOMAT_STATIC=${PRAKTOMAT_HOME}/static
+ENV PRAKTOMAT_SANDBOX=$PRAKTOMAT_HOME/sandbox
+
+RUN mkdir -p $PRAKTOMAT_HOME
+RUN mkdir $PRAKTOMAT_ROOT
+RUN mkdir $PRAKTOMAT_STATIC
+RUN mkdir $PRAKTOMAT_SUPPORT
+RUN mkdir $PRAKTOMAT_SANDBOX
+
+WORKDIR $PRAKTOMAT_HOME
 
 # install dependencies
-RUN pip install --upgrade pip
+RUN apt update && apt install -y sudo build-essential postgresql \
+    libpq-dev zlib1g-dev libsasl2-dev libssl-dev swig netcat-openbsd
+#RUN apt add python3-dev uwsgi-python3
+#RUN apt add docker perl-ipc-run perl-data-guid
+#RUN apt add apache2 apache2-dev
+
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 
-# copy entrypoint.sh
-COPY ./entrypoint.sh .
-RUN chmod +x entrypoint.sh
+# create the app user
+#RUN useradd -M -u ${UID} praktomat -G sudo && useradd -M -G praktomat -G sudo tester
+RUN \
+    groupadd -g ${GID}  praktomat &&    useradd -u ${UID} -g ${GID} -G sudo         -m -s /bin/bash praktomat && \
+    groupadd            tester    &&    useradd           -g tester -G praktomat    -m -s /bin/bash tester && \
+    sed -i /etc/sudoers -re 's/^%sudo.*/%sudo ALL=(ALL:ALL) NOPASSWD: ALL/g' && \
+    sed -i /etc/sudoers -re 's/^root.*/root ALL=(ALL:ALL) NOPASSWD: ALL/g' && \
+    sed -i /etc/sudoers -re 's/^#includedir.*/## **Removed the include directive** ##"/g' && \
+    echo "praktomat ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+    echo "Customized the sudoers file for passwordless access to the praktomat user!" && \
+    echo "praktomat user:";  su - praktomat -c id && \
+    echo "tester user:";  su - tester -c id
 
-# copy project
-COPY . ./Praktomat/
-RUN mkdir ./PraktomatSupport
+# copy source code
+COPY ./src/ $PRAKTOMAT_ROOT
+COPY ./media/ $PRAKTOMAT_HOME/media/
 
-# run entrypoint.sh
-ENTRYPOINT ["/server/entrypoint.sh"]
+# copy additional files
+COPY ./entrypoint.dev.sh $PRAKTOMAT_HOME/
+COPY ./uwsgi.ini $PRAKTOMAT_HOME/
+COPY ./praktomat.wsgi $PRAKTOMAT_ROOT/praktomat.py
+COPY ./mime.types /etc/
+
+#RUN cp /home/app/Praktomat/safe-docker/safe-docker /usr/local/bin
+
+
+
+# chown all the files to the app user
+RUN chown -R praktomat:praktomat $PRAKTOMAT_HOME
+
+# chown all static files to match with nginx
+
+# change to the app user
+USER praktomat:praktomat
+
+# run entrypoint.prod.sh
+ENTRYPOINT ["sh", "entrypoint.dev.sh"]
