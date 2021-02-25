@@ -3,7 +3,7 @@
 ###########
 
 # pull official base image
-FROM python:3.8.3-alpine as builder
+FROM python:3.8.3 as builder
 
 # set work directory
 WORKDIR /usr/src/app
@@ -13,9 +13,9 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # install psycopg2 dependencies
-RUN apk update \
-    && apk add postgresql-dev gcc python3-dev musl-dev uwsgi gcc g++ linux-headers build-base linux-headers pcre-dev
-
+RUN apt update && apt install -y sudo build-essential postgresql \
+    libpq-dev zlib1g-dev libsasl2-dev libssl-dev swig netcat-openbsd \
+    dejagnu
 
 # install dependencies
 COPY ./requirements.txt .
@@ -33,43 +33,49 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requir
 #########
 
 # pull official base image
-FROM python:3.8.3-alpine
+FROM python:3.8.3
 
-ENV ALPINEPYTHON python3.8
+ARG UID=1000
+ARG GID=1000
 
-# create directory for the app user
-RUN mkdir -p /home/app
+# install dependencies
+RUN apt update && apt install -y sudo build-essential postgresql \
+    libpq-dev zlib1g-dev libsasl2-dev libssl-dev swig netcat-openbsd \
+    dejagnu
+# For safe-docker support
+#   docker perl-ipc-run perl-data-guid
 
-# create the app user
-RUN addgroup -S praktomat && addgroup -S sudo && adduser -S praktomat -G praktomat && adduser -S tester -G praktomat
+COPY --from=builder /usr/src/app/wheels /wheels
+COPY --from=builder /usr/src/app/requirements.txt .
+RUN pip install --no-cache /wheels/*
+
+# create users
+RUN \
+    groupadd -g ${GID}  praktomat &&    useradd -u ${UID} -g ${GID} -G sudo         -m -s /bin/bash praktomat && \
+    groupadd            tester    &&    useradd           -g tester -G praktomat    -M -s /bin/bash tester && \
+    sed -i /etc/sudoers -re 's/^%sudo.*/%sudo ALL=(ALL:ALL) NOPASSWD: ALL/g' && \
+    sed -i /etc/sudoers -re 's/^root.*/root ALL=(ALL:ALL) NOPASSWD: ALL/g' && \
+    sed -i /etc/sudoers -re 's/^#includedir.*/## **Removed the include directive** ##"/g' && \
+    echo "praktomat ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+    echo "Customized the sudoers file for passwordless access to the praktomat user!" && \
+    echo "praktomat user:";  su - praktomat -c id && \
+    echo "tester user:";  su - tester -c id
+
+USER praktomat:praktomat
+
+ENV HOME=/home/praktomat
+WORKDIR $HOME
 
 # create the appropriate directories
-ENV HOME=/home/praktomat
 ENV PRAKTOMAT_ROOT=$HOME/praktomat
 ENV PRAKTOMAT_SUPPORT=$HOME/support
-ENV PRAKTOMAT_STATIC=$HOME/static
+ENV PRAKTOMAT_STATIC=${HOME}/static
 ENV PRAKTOMAT_SANDBOX=$HOME/sandbox
 
 RUN mkdir $PRAKTOMAT_ROOT
 RUN mkdir $PRAKTOMAT_STATIC
 RUN mkdir $PRAKTOMAT_SUPPORT
 RUN mkdir $PRAKTOMAT_SANDBOX
-
-WORKDIR $HOME
-
-# install dependencies
-RUN apk update && apk add libpq postgresql-dev sudo
-RUN apk add gcc g++ linux-headers build-base linux-headers pcre-dev
-RUN apk add swig cyrus-sasl-dev openssl openssl-dev dejagnu
-#RUN apk add python3-dev uwsgi-python3
-#RUN apk add docker perl-ipc-run perl-data-guid
-#RUN apk add apache2 apache2-dev
-COPY --from=builder /usr/src/app/wheels /wheels
-COPY --from=builder /usr/src/app/requirements.txt .
-RUN pip install --no-cache /wheels/*
-
-RUN echo '%wheel ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/wheel
-RUN adduser praktomat wheel
 
 # copy source code
 COPY ./src/ $PRAKTOMAT_ROOT
@@ -78,16 +84,9 @@ COPY ./media/ $HOME/media/
 # copy additional files
 COPY ./entrypoint.prod.sh $HOME/
 COPY ./uwsgi.ini $HOME/
-COPY ./praktomat.wsgi $PRAKTOMAT_ROOT/praktomat.py
-COPY ./mime.types /etc/
+COPY ./praktomat.wsgi ${PRAKTOMAT_ROOT}/praktomat.py
 
 #RUN cp /home/app/Praktomat/safe-docker/safe-docker /usr/local/bin
-
-# chown all the files to the app user
-RUN chown -R praktomat:praktomat $HOME
-
-# change to the app user
-USER praktomat:praktomat
 
 # run entrypoint.prod.sh
 ENTRYPOINT ["sh", "entrypoint.prod.sh"]

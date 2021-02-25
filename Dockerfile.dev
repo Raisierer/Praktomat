@@ -1,28 +1,57 @@
-FROM python:3.8.3-alpine
+FROM python:3.8.3
 
-# set work directory
-WORKDIR /server
-
-# set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
-# install psycopg2 dependencies
-RUN apk update \
-    && apk add postgresql-dev gcc python3-dev musl-dev
+ARG UID=1000
+ARG GID=1000
 
 # install dependencies
-RUN pip install --upgrade pip
+RUN apt update && apt install -y sudo build-essential postgresql \
+    libpq-dev zlib1g-dev libsasl2-dev libssl-dev swig netcat-openbsd \
+    dejagnu
+# For safe-docker support
+#   docker perl-ipc-run perl-data-guid
+
+
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 
-# copy entrypoint.sh
-COPY ./entrypoint.sh .
-RUN chmod +x entrypoint.sh
+# create users
+RUN \
+    groupadd -g ${GID}  praktomat &&    useradd -u ${UID} -g ${GID} -G sudo         -m -s /bin/bash praktomat && \
+    groupadd            tester    &&    useradd           -g tester -G praktomat    -M -s /bin/bash tester && \
+    sed -i /etc/sudoers -re 's/^%sudo.*/%sudo ALL=(ALL:ALL) NOPASSWD: ALL/g' && \
+    sed -i /etc/sudoers -re 's/^root.*/root ALL=(ALL:ALL) NOPASSWD: ALL/g' && \
+    sed -i /etc/sudoers -re 's/^#includedir.*/## **Removed the include directive** ##"/g' && \
+    echo "praktomat ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+    echo "Customized the sudoers file for passwordless access to the praktomat user!" && \
+    echo "praktomat user:";  su - praktomat -c id && \
+    echo "tester user:";  su - tester -c id
 
-# copy project
-COPY . ./Praktomat/
-RUN mkdir ./PraktomatSupport
+USER praktomat:praktomat
 
-# run entrypoint.sh
-ENTRYPOINT ["/server/entrypoint.sh"]
+ENV HOME=/home/praktomat
+WORKDIR $HOME
+
+# create the appropriate directories
+ENV PRAKTOMAT_ROOT=$HOME/praktomat
+ENV PRAKTOMAT_SUPPORT=$HOME/support
+ENV PRAKTOMAT_STATIC=${HOME}/static
+ENV PRAKTOMAT_SANDBOX=$HOME/sandbox
+
+RUN mkdir $PRAKTOMAT_ROOT
+RUN mkdir $PRAKTOMAT_STATIC
+RUN mkdir $PRAKTOMAT_SUPPORT
+RUN mkdir $PRAKTOMAT_SANDBOX
+
+# copy source code
+COPY ./src/ $PRAKTOMAT_ROOT
+COPY ./media/ $HOME/media/
+
+# copy additional files
+COPY ./entrypoint.dev.sh $HOME/
+COPY ./uwsgi.ini $HOME/
+COPY ./praktomat.wsgi ${PRAKTOMAT_ROOT}/praktomat.py
+
+#RUN cp /home/app/Praktomat/safe-docker/safe-docker /usr/local/bin
+
+# run entrypoint.dev.sh
+ENTRYPOINT ["sh", "entrypoint.dev.sh"]
