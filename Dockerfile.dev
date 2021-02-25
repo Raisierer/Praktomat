@@ -44,7 +44,7 @@ RUN mkdir $PRAKTOMAT_SANDBOX
 
 # copy source code
 COPY ./src/ $PRAKTOMAT_ROOT
-COPY ./media/ $PRAKTOMAT_HOME/media/
+COPY ./media/ $HOME/media/
 
 # copy additional files
 COPY ./entrypoint.dev.sh $HOME/
