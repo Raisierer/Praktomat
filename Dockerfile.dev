@@ -7,9 +7,9 @@ ARG GID=1000
 RUN apt update && apt install -y sudo build-essential postgresql \
     libpq-dev zlib1g-dev libsasl2-dev libssl-dev swig netcat-openbsd \
     dejagnu
-    #RUN apt add python3-dev uwsgi-python3
-#RUN apt add docker perl-ipc-run perl-data-guid
-#RUN apt add apache2 apache2-dev
+# For safe-docker support
+#   docker perl-ipc-run perl-data-guid
+
 
 COPY ./requirements.txt .
 RUN pip install -r requirements.txt
@@ -53,5 +53,5 @@ COPY ./praktomat.wsgi ${PRAKTOMAT_ROOT}/praktomat.py
 
 #RUN cp /home/app/Praktomat/safe-docker/safe-docker /usr/local/bin
 
-# run entrypoint.prod.sh
+# run entrypoint.dev.sh
 ENTRYPOINT ["sh", "entrypoint.dev.sh"]
